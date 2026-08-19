@@ -1,12 +1,12 @@
 #! /bin/sh
 
-PROTOC=/opt/protoc
+PROTOC=${PROTOC:-/opt/protoc}
 
 # protoc-gen-go for go 1.22
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.0
 # protoc-gen-go-grpc for go 1.22
 #go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0
-export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:$(go env GOPATH)/bin
 
 PROTO_FILE="bfe_access_pb/bfe_access.proto"
 
