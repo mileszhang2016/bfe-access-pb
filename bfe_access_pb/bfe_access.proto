@@ -76,6 +76,13 @@ message RateLimitHit {
     repeated string rule_names           = 3;  // List of triggered rule names, e.g., ["win2min","win10min"]
 }
 
+// AIRouteRuleHit represents a hit AI routing rule
+message AIRouteRuleHit {
+    optional string rule_owner      = 1;  // Route table owner, e.g., "ak_user_a", "dept_ai", "global"
+    optional string rule_owner_type = 2;  // Route table type: apikey / entity / global
+    optional string rule_name       = 3;  // Rule name, e.g., "user_a-rule1"
+}
+
 //------------------------------------------------------------------------------------------------
 // Request Log
 //------------------------------------------------------------------------------------------------
@@ -304,10 +311,10 @@ message RequestLog {
 	reserved 601 to 610;
 
     //------------------------------------------------------------------
-    // AI Observability fields (id: 701 - 800)
+    // AI Observability fields (id: 701 - 900)
     //------------------------------------------------------------------
-    // API Key (extracted from Authorization header)
-    optional string ai_apikey = 701;
+    // API Key internal ID (e.g. Virtual Key ID), not the raw API Key value
+    optional string ai_apikey_id = 701;
 
     // API Key attached tags list, e.g., [{"tagname":"dep","tagvalue":"op"}, {"tagname":"team","tagvalue":"bfe"}]
     repeated ApikeyTag ai_apikeytags = 702;
@@ -316,13 +323,13 @@ message RequestLog {
     optional string ai_requested_model = 703;
 
     // Target model name actually routed by gateway
-    optional string ai_mapped_model = 704;
+    optional string ai_target_model = 704;
 
     // Whether it is a streaming response
     optional bool ai_stream = 705;
 
     // Input token count
-    optional int64 ai_prompt_tokens = 706;
+    optional int64 ai_input_tokens = 706;
 
     // Output token count
     optional int64 ai_output_tokens = 707;
@@ -345,6 +352,31 @@ message RequestLog {
     // List of rejected Quota Plan IDs
     repeated string ai_auth_reject_quota_plans = 713;
 
+    // 714 - 760: model and request basic info
+    // Upstream model provider, e.g., openai, anthropic, baidu, aliyun
+    optional string ai_provider = 714;
+
+    // Model invocation retry count, decoupled from HTTP layer backend_retry
+    optional uint32 ai_retry_count = 715;
+
+    // 761 - 800: token and cost metering
+    // Estimated cost of this request (fixed-point integer; precision depends on ai_cost_currency)
+    optional int64 ai_cost_value = 761;
+
+    // Cost currency, currently supports RMB and USD
+    optional string ai_cost_currency = 762;
+
+    // 801 - 840: routing, transformation and plugins
+    // Hit AI routing rules
+    repeated AIRouteRuleHit ai_route_rule_hits = 801;
+
+    // Tried (cluster, key) pairs during request processing
+    repeated ClusterKeyName ai_cluster_key_names = 802;
+
+    // 841 - 880: security, compliance and privacy
+    // List of hit Quota Plan IDs for successful requests
+    repeated string ai_auth_hit_quota_plans = 841;
+
 }
 
 // info for a service instance
@@ -353,6 +385,12 @@ message InstanceInfo {
 	required uint32 ip_addr	= 1;
 	// port. there is no uint16 in pb
 	required uint32 port	= 2;
+}
+
+// ClusterKeyName represents a tried cluster and API-Key pair during request processing
+message ClusterKeyName {
+    optional string cluster_name = 1;  // Cluster name, e.g., "cluster_deepseek_a"
+    optional string key_name     = 2;  // API-Key name/identifier, e.g., "key_001"
 }
 
 //------------------------------------------------------------------------------------------------

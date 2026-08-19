@@ -107,16 +107,29 @@ enum BfeLogType {
 | `connect_backend_time` | `uint32` | 207 | 连接后端耗时（ms，重试时为最后一次） |
 | `proxy_delay_time` | `uint32` | 208 | BFE 代理延迟耗时（ms） |
 
-### 2.7 AI 可观测性字段（编号 701 - 800）
+### 2.7 AI 可观测性字段（编号 701 - 900）
+
+**编号区间规划**：
+
+protobuf 字段编号上限为 `2^29 - 1`（约 5.37 亿），因此 701-900 区间非常宽松。为给 AI 网关后续扩展预留充足空间，将 AI 可观测性字段从 701-800 扩展到 701-900，划分如下：
+
+| 编号区间 | 用途 |
+|---|---|
+| 701 - 713 | **已投入使用字段**，保持现状，不再调整 |
+| 714 - 760 | 模型与请求基础信息（model、provider、stream、retry、cache 等） |
+| 761 - 800 | Token 与成本计量 |
+| 801 - 840 | 路由、转换与插件 |
+| 841 - 880 | 安全、合规与隐私 |
+| 881 - 900 | 厂商扩展与预留 |
 
 | 字段 | 类型 | 编号 | 说明 |
 |------|------|------|------|
-| `ai_apikey` | `string` | 701 | 从 Authorization 头提取的 API Key |
-| `ai_apikeytags` | `repeated ApikeyTag` | 702 | API Key 附加标签列表 |
+| `ai_apikey_id` | `string` | 701 | API Key 的内部标识（如 Virtual Key ID），不记录原始 API Key 值 |
+| `ai_apikeytags` | `repeated ApikeyTag` | 702 | API Key 关联的 Entity 层级标签列表，来自 `mod_ai_token_auth` 的 Token 配置；用于按标签维度进行配额控制、限流和可观测分析 |
 | `ai_requested_model` | `string` | 703 | 客户端请求的原始模型名 |
-| `ai_mapped_model` | `string` | 704 | 网关实际路由的目标模型名 |
+| `ai_target_model` | `string` | 704 | 网关实际路由的目标模型名 |
 | `ai_stream` | `bool` | 705 | 是否为流式响应 |
-| `ai_prompt_tokens` | `int64` | 706 | 输入 Token 数 |
+| `ai_input_tokens` | `int64` | 706 | 输入 Token 数 |
 | `ai_output_tokens` | `int64` | 707 | 输出 Token 数 |
 | `ai_total_tokens` | `int64` | 708 | 总 Token 消耗 |
 | `ai_ttft_us` | `int64` | 709 | 首 Token 延迟 TTFT（微秒），仅流式请求 |
@@ -124,6 +137,13 @@ enum BfeLogType {
 | `ai_rate_limit_hits` | `repeated RateLimitHit` | 711 | 触发的限流策略列表 |
 | `ai_auth_reject_reason` | `string` | 712 | 鉴权拒绝原因 |
 | `ai_auth_reject_quota_plans` | `repeated string` | 713 | 拒绝时命中的 Quota Plan ID 列表 |
+| `ai_provider` | `string` | 714 | 上游模型提供商标识，如 `openai`、`anthropic`、`baidu`、`aliyun` |
+| `ai_retry_count` | `uint32` | 715 | 模型调用重试次数，与 HTTP 层 `backend_retry` 解耦 |
+| `ai_cost_value` | `int64` | 761 | 单次请求估算成本（定点整数，精度由 `ai_cost_currency` 决定，如 RMB 为 1e-8 元） |
+| `ai_cost_currency` | `string` | 762 | 成本币种，当前支持 `RMB`、`USD` |
+| `ai_route_rule_hits` | `repeated AIRouteRuleHit` | 801 | 命中的 AI 路由规则列表 |
+| `ai_cluster_key_names` | `repeated ClusterKeyName` | 802 | 请求处理过程中尝试过的 (cluster, key) 列表 |
+| `ai_auth_hit_quota_plans` | `repeated string` | 841 | 正常请求时命中的 Quota Plan ID 列表 |
 
 ## 3. SessionLog（会话日志）
 
@@ -168,12 +188,18 @@ enum BfeLogType {
 
 ### 4.1 ApikeyTag
 
+`ApikeyTag` 描述 API Key 关联的 Entity 层级标签，由 `mod_ai_token_auth` 模块在认证阶段从 Token 配置中读取并写入 `AiBasicInfo.ApikeyTags`，最终透传到访问日志。
+
 ```protobuf
 message ApikeyTag {
-    optional string tagname  = 1;  // 标签名，如 "dep"
-    optional string tagvalue = 2;  // 标签值，如 "op"
+    optional string tagname  = 1;  // 标签名，如 "department"、"team"、"project"
+    optional string tagvalue = 2;  // 标签值，如 "dept-engineering"、"team-core"、"project-a"
 }
 ```
+
+典型用途：
+- 基于标签的配额控制与限流（如按部门、团队分配配额）
+- 可观测性下钻分析（如按部门/团队统计 token 消耗、成本）
 
 ### 4.2 RateLimitHit
 
@@ -185,7 +211,19 @@ message RateLimitHit {
 }
 ```
 
-### 4.3 ConnAddrInfo
+### 4.3 AIRouteRuleHit
+
+`AIRouteRuleHit` 描述 `mod_ai_route` 模块命中的路由规则信息，对应 `ai_route.data` 中的路由表和规则定义。
+
+```protobuf
+message AIRouteRuleHit {
+    optional string rule_owner      = 1;  // 路由表所有者，对应 route_rules{v}.owner，如 "ak_user_a"、"dept_ai"、"global"
+    optional string rule_owner_type = 2;  // 路由表类型，对应 route_rules{v}.type，如 "apikey"、"entity"、"global"
+    optional string rule_name       = 3;  // 规则名称，对应 route_rules{v}.rules[].name，如 "user_a-rule1"
+}
+```
+
+### 4.4 ConnAddrInfo
 
 ```protobuf
 message ConnAddrInfo {
@@ -197,7 +235,7 @@ message ConnAddrInfo {
 }
 ```
 
-### 4.4 HttpHeader
+### 4.5 HttpHeader
 
 ```protobuf
 message HttpHeader {
@@ -206,7 +244,7 @@ message HttpHeader {
 }
 ```
 
-### 4.5 InstanceInfo
+### 4.6 InstanceInfo
 
 ```protobuf
 message InstanceInfo {
@@ -215,7 +253,18 @@ message InstanceInfo {
 }
 ```
 
-### 4.6 其他枚举
+### 4.7 ClusterKeyName
+
+`ClusterKeyName` 描述 AI 请求处理过程中尝试过的集群与 API-Key 组合，对应 `cluster_conf.data` 中的集群配置。
+
+```protobuf
+message ClusterKeyName {
+    optional string cluster_name = 1;  // 集群名称，对应 Config[k]，如 "cluster_deepseek_a"
+    optional string key_name     = 2;  // API-Key 名称/标识，对应 AIConf.Keys[i].Name，如 "key_001"
+}
+```
+
+### 4.8 其他枚举
 
 | 枚举 | 值 | 说明 |
 |------|----|------|
