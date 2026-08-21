@@ -67,6 +67,7 @@ message BfeLog {
 message ApikeyTag {
     optional string tagname  = 1;  // Tag name, e.g., "dep"
     optional string tagvalue = 2;  // Tag value, e.g., "op"
+    optional int32  taglevel = 3;  // Tag level, value range 1~5
 }
 
 // RateLimitHit represents a rate limit hit record

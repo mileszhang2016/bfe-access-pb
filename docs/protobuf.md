@@ -194,6 +194,7 @@ protobuf 字段编号上限为 `2^29 - 1`（约 5.37 亿），因此 701-900 区
 message ApikeyTag {
     optional string tagname  = 1;  // 标签名，如 "department"、"team"、"project"
     optional string tagvalue = 2;  // 标签值，如 "dept-engineering"、"team-core"、"project-a"
+    optional int32  taglevel = 3;  // 标签级别，取值为 1~5 的整数，对应 EntityType 的 Level
 }
 ```
 
