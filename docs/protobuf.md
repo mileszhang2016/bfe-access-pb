@@ -116,8 +116,8 @@ protobuf 字段编号上限为 `2^29 - 1`（约 5.37 亿），因此 701-900 区
 | 编号区间 | 用途 |
 |---|---|
 | 701 - 713 | **已投入使用字段**，保持现状，不再调整 |
-| 714 - 760 | 模型与请求基础信息（model、provider、stream、retry、cache 等） |
-| 761 - 800 | Token 与成本计量 |
+| 714 - 760 | 模型与请求基础信息（model、provider、stream、retry 等） |
+| 761 - 800 | Token、成本与 Cache 计量 |
 | 801 - 840 | 路由、转换与插件 |
 | 841 - 880 | 安全、合规与隐私 |
 | 881 - 900 | 厂商扩展与预留 |
@@ -141,6 +141,8 @@ protobuf 字段编号上限为 `2^29 - 1`（约 5.37 亿），因此 701-900 区
 | `ai_retry_count` | `uint32` | 715 | 模型调用重试次数，与 HTTP 层 `backend_retry` 解耦 |
 | `ai_cost_value` | `int64` | 761 | 单次请求估算成本（定点整数，精度由 `ai_cost_currency` 决定，如 RMB 为 1e-8 元） |
 | `ai_cost_currency` | `string` | 762 | 成本币种，当前支持 `RMB`、`USD` |
+| `ai_cache_read_tokens` | `int64` | 781 | 从 cache 读取的 Token 数 |
+| `ai_cache_write_tokens` | `int64` | 782 | 写入 cache 的 Token 数 |
 | `ai_route_rule_hits` | `repeated AIRouteRuleHit` | 801 | 命中的 AI 路由规则列表 |
 | `ai_cluster_key_names` | `repeated ClusterKeyName` | 802 | 请求处理过程中尝试过的 (cluster, key) 列表 |
 | `ai_auth_hit_quota_plans` | `repeated string` | 841 | 正常请求时命中的 Quota Plan ID 列表 |
@@ -286,4 +288,4 @@ message ClusterKeyName {
 | 401 - 500 | WAF 预留 |
 | 501 - 600 | 模块信息预留 |
 | 601 - 610 | 通用预留 |
-| 701 - 800 | AI 可观测性字段 |
+| 701 - 900 | AI 可观测性字段 |
