@@ -360,6 +360,10 @@ message RequestLog {
     // Model invocation retry count, decoupled from HTTP layer backend_retry
     optional uint32 ai_retry_count = 715;
 
+    // 716 - 760: AI request mode and capability classification
+    // AI request mode, e.g., chat, image_generation, embedding, audio_speech
+    optional string ai_mode = 716;
+
     // 761 - 800: token and cost metering
     // Estimated cost of this request (fixed-point integer; precision depends on ai_cost_currency)
     optional int64 ai_cost_value = 761;
@@ -367,7 +371,7 @@ message RequestLog {
     // Cost currency, currently supports RMB and USD
     optional string ai_cost_currency = 762;
 
-    // 781 - 790: cache and audio token metering
+    // 781 - 790: cache, audio and image metering
     // Number of tokens read from cache
     optional int64 ai_cache_read_tokens = 781;
 
@@ -379,6 +383,9 @@ message RequestLog {
 
     // Number of audio output tokens
     optional int64 ai_audio_output_tokens = 784;
+
+    // Number of images generated (image_generation mode)
+    optional int64 ai_image_count = 785;
 
     // 801 - 840: routing, transformation and plugins
     // Hit AI routing rules
