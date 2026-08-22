@@ -367,12 +367,18 @@ message RequestLog {
     // Cost currency, currently supports RMB and USD
     optional string ai_cost_currency = 762;
 
-    // 781 - 790: cache token metering
+    // 781 - 790: cache and audio token metering
     // Number of tokens read from cache
     optional int64 ai_cache_read_tokens = 781;
 
     // Number of tokens written to cache
     optional int64 ai_cache_write_tokens = 782;
+
+    // Number of audio input tokens
+    optional int64 ai_audio_input_tokens = 783;
+
+    // Number of audio output tokens
+    optional int64 ai_audio_output_tokens = 784;
 
     // 801 - 840: routing, transformation and plugins
     // Hit AI routing rules
