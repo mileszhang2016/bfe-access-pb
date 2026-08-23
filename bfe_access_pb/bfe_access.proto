@@ -364,6 +364,9 @@ message RequestLog {
     // AI request mode, e.g., chat, image_generation, embedding, audio_speech
     optional string ai_mode = 716;
 
+    // AI protocol style, e.g., openai, anthropic
+    optional string ai_protocol = 717;
+
     // 761 - 800: token and cost metering
     // Estimated cost of this request (fixed-point integer; precision depends on ai_cost_currency)
     optional int64 ai_cost_value = 761;

@@ -140,6 +140,7 @@ protobuf 字段编号上限为 `2^29 - 1`（约 5.37 亿），因此 701-900 区
 | `ai_provider` | `string` | 714 | 上游模型提供商标识，如 `openai`、`anthropic`、`baidu`、`aliyun` |
 | `ai_retry_count` | `uint32` | 715 | 模型调用重试次数，与 HTTP 层 `backend_retry` 解耦 |
 | `ai_mode` | `string` | 716 | AI 请求模式，如 `chat`、`image_generation`、`embedding`、`audio_speech` 等 |
+| `ai_protocol` | `string` | 717 | AI 协议风格，如 `openai`、`anthropic` |
 | `ai_cost_value` | `int64` | 761 | 单次请求估算成本（定点整数，精度由 `ai_cost_currency` 决定，如 RMB 为 1e-8 元） |
 | `ai_cost_currency` | `string` | 762 | 成本币种，当前支持 `RMB`、`USD` |
 | `ai_cache_read_tokens` | `int64` | 781 | 从 cache 读取的 Token 数 |
