@@ -374,7 +374,7 @@ message RequestLog {
     // Cost currency, currently supports RMB and USD
     optional string ai_cost_currency = 762;
 
-    // 781 - 790: cache, audio and image metering
+    // 781 - 790: cache, audio, image and video metering
     // Number of tokens read from cache
     optional int64 ai_cache_read_tokens = 781;
 
@@ -389,6 +389,12 @@ message RequestLog {
 
     // Number of images generated (image_generation mode)
     optional int64 ai_image_count = 785;
+
+    // Number of image input tokens (included in ai_input_tokens)
+    optional int64 ai_image_input_tokens = 786;
+
+    // Number of generated videos (video_generation mode)
+    optional int64 ai_video_count = 787;
 
     // 801 - 840: routing, transformation and plugins
     // Hit AI routing rules
